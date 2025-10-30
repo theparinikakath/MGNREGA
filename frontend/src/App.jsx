@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "./config";
 import PerformanceCard from "./components/PerformanceCard";
 import { Row, Col, Spinner, Alert, Button } from "react-bootstrap";
 import DistrictSelector from "./components/DistrictSelector";
@@ -12,7 +13,6 @@ function App() {
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [month, setMonth] = useState("");
 
-  // 🗓️ Short → Full month name map
   const monthMap = {
     Jan: "January",
     Feb: "February",
@@ -36,10 +36,10 @@ function App() {
 
       const fullMonth = monthMap[selectedMonth] || selectedMonth;
 
-      const res = await axios.get("http://mgnrega-e5fw.onrender.com/api/data", {
-        params: fullMonth ? { month: fullMonth } : {},
-        timeout: 8000,
-      });
+      const res = await axios.get(`${API_BASE_URL}/api/data`, {
+      params: fullMonth ? { month: fullMonth } : {},
+      timeout: 8000,
+    });
 
       console.log("✅ Received data:", res.data);
       setData(res.data);
