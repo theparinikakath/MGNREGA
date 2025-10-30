@@ -2,36 +2,43 @@ import express from "express";
 import fs from "fs";
 import cors from "cors";
 import axios from "axios";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
-const PORT = 5000;
-const DATA_FILE = "data/mgnregaData.json";
+const PORT = process.env.PORT || 5000;
+
+// Resolve __dirname in ES Module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Path to JSON file (inside backend/data folder)
+const DATA_FILE = path.join(__dirname, "data", "mgnregaData.json");
 
 app.use(cors());
 
-// 🧠 Utility: Load data safely from local file
+// ✅ Load cached data if available
 function loadLocalData() {
   try {
     if (!fs.existsSync(DATA_FILE)) {
-      console.warn("⚠️ Local data file not found, returning empty array.");
+      console.warn("⚠️ Local data file not found.");
       return [];
     }
-    const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    return JSON.parse(raw);
+    return JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
   } catch (err) {
     console.error("❌ Error reading local data:", err);
     return [];
   }
 }
 
-// 🌐 Fetch latest data from the API
+// ✅ Fetch and cache latest API data
 async function fetchLatestData() {
   try {
     const response = await axios.get(
       "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070",
       {
         params: {
-          api_key: "YOUR_API_KEY_HERE", // optional if public endpoint
+          api_key: "YOUR_API_KEY_HERE",
           format: "json",
           limit: 1000,
         },
@@ -39,42 +46,36 @@ async function fetchLatestData() {
     );
 
     const records = (response.data.records || []).filter(
-      (item) =>
-        item.state_name &&
-        item.state_name.toLowerCase() === "madhya pradesh"
+      (item) => item.state_name?.toLowerCase() === "madhya pradesh"
     );
 
-    // Ensure data directory exists before writing
-    fs.mkdirSync("data", { recursive: true });
+    fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
     fs.writeFileSync(DATA_FILE, JSON.stringify(records, null, 2));
 
-    console.log("✅ Fetched and updated latest MGNREGA data.");
+    console.log("✅ Data fetched & cached.");
     return records;
   } catch (err) {
-    console.warn("⚠️ Failed to fetch from API, using cached data instead.");
+    console.warn("⚠️ API failed → using cached data");
     return loadLocalData();
   }
 }
 
-// ✅ Endpoint: Serve filtered data
+// ✅ API endpoint
 app.get("/api/data", async (req, res) => {
   const { month } = req.query;
   let data = loadLocalData();
 
-  // Try refreshing data if file is empty
+  // If data empty, fetch latest
   if (!data || data.length === 0) {
     data = await fetchLatestData();
   }
 
-  // 🔍 Filter by month if specified (flexible matching)
+  // Filter by month
   if (month) {
     const normalized = month.toLowerCase();
     data = data.filter((item) => {
       const m = (item.month || "").toLowerCase();
-      return (
-        m.includes(normalized) || // e.g. "jan" in "jan-2024"
-        m.startsWith(normalized.slice(0, 3)) // e.g. "jan" in "january"
-      );
+      return m.includes(normalized) || m.startsWith(normalized.slice(0, 3));
     });
   }
 
@@ -85,7 +86,14 @@ app.get("/api/data", async (req, res) => {
   res.json(data);
 });
 
-// 🟢 Start the server
+// ✅ Serve React frontend build for Render deployment
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+});
+
+// ✅ Start server
 app.listen(PORT, () =>
-  console.log(`✅ Backend running at http://localhost:${PORT}`)
+  console.log(`✅ Server live at http://localhost:${PORT}`)
 );
