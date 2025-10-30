@@ -12,8 +12,13 @@ const PORT = process.env.PORT || 5000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Path to JSON file (inside backend/data folder)
-const DATA_FILE = path.join(__dirname, "data", "mgnregaData.json");
+// ✅ Store JSON in a writable runtime folder (works on Render)
+const DATA_FOLDER = path.join(process.cwd(), "data");
+const DATA_FILE = path.join(DATA_FOLDER, "mgnregaData.json");
+
+// ✅ Ensure "data" directory exists at runtime
+fs.mkdirSync(DATA_FOLDER, { recursive: true });
+
 
 app.use(cors());
 
