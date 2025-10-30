@@ -36,7 +36,7 @@ function App() {
 
       const fullMonth = monthMap[selectedMonth] || selectedMonth;
 
-      const res = await axios.get("http://localhost:5000/api/data", {
+      const res = await axios.get("http://mgnrega-e5fw.onrender.com/api/data", {
         params: fullMonth ? { month: fullMonth } : {},
         timeout: 8000,
       });
