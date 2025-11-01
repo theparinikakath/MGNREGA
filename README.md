@@ -48,16 +48,22 @@ Hosting	Render (Frontend & Backend)
 ## 🏗 Architecture Overview
 User UI (React)
 ↓
+
 API call
 ↓       
+
 Backend (Node + Express)
 ↓
+
 fetch + cache
 ↓       
+
 Gov MGNREGA API
 ↓
+
 fallback
-↓       
+↓     
+
 Local JSON Cache (data/mgnregaData.json)
 
 
